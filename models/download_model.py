@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torch
 from huggingface_hub import snapshot_download
-from transformers import AutoModel, AutoProcessor
+from sentence_transformers import SentenceTransformer
 
 
 DEFAULT_REPO_ID = "Qwen/Qwen3-VL-Embedding-2B"
@@ -44,20 +44,6 @@ def get_or_download_model(
     else:
         print(f"[models] Использую локальную копию: {local_model_dir}")
 
-    processor = AutoProcessor.from_pretrained(
-        str(local_model_dir),
-        local_files_only=True,
-        trust_remote_code=True,
-    )
+    model = SentenceTransformer(str(local_model_dir))
 
-    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-
-    model = AutoModel.from_pretrained(
-        str(local_model_dir),
-        local_files_only=True,
-        trust_remote_code=True,
-        torch_dtype=dtype,
-        device_map="auto",
-    ).eval()
-
-    return model, processor
+    return model
