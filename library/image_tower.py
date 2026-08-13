@@ -8,10 +8,12 @@ class ImageTower:
 
     @torch.inference_mode()
     def __call__(self, images: list[torch.Tensor], prompt: str | None = None, batch_size: int = 8) -> torch.Tensor:
-        return self.encoder.encode(
+        embeddings = self.encoder.encode(
             images,
             batch_size=batch_size,
             convert_to_tensor=True,
             show_progress_bar=False,
             prompt=prompt,
         )
+
+        return embeddings.unsqueeze(0) if embeddings.ndim == 1 else embeddings

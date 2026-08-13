@@ -77,5 +77,5 @@ class Model(nn.Module):
 
         x = torch.cat([text_embeds, image_embeds], dim=-1)
         x = self.net(x)
-        x = x.squeeze(x)
+        x = x.squeeze(-1)
         return x
