@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 
 
 DEFAULT_REPO_ID = "Qwen/Qwen3-VL-Embedding-2B"
-DEFAULT_MODELS_DIR = Path.home() / "quality_control" / "models"
+DEFAULT_MODELS_DIR = Path("./models")
 DEFAULT_EMBEDDING_DIM = 2048
 
 

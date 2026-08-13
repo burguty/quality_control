@@ -75,6 +75,10 @@ class Model(nn.Module):
         text_embeds = self.get_text_embeds(inputs).to(self.device)
         image_embeds = self.get_image_embeds(inputs).to(self.device)
 
+        print("encoder dim:", self.encoder.get_embedding_dimension())
+        print("text:", text_embeds.shape)
+        print("image:", image_embeds.shape)
+
         x = torch.cat([text_embeds, image_embeds], dim=-1)
         x = self.net(x)
         x = x.squeeze(-1)

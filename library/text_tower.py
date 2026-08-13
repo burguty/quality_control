@@ -12,7 +12,7 @@ class TextTower:
             texts,
             batch_size=batch_size,
             convert_to_tensor=True,
-            show_progress_bar=False,
+            show_progress_bar=True,
             prompt=prompt,
         )
 
