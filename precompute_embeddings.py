@@ -2,6 +2,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 import torch
+from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 
 from models.download_model import get_or_download_model
@@ -67,7 +68,10 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    dataset = OzonDataset(path_to_data=DEFAULT_DATA_PATH, path_to_images=DEFAULT_IMAGES_PATH)
+    image_transform = v2.Compose([
+        v2.Resize(size=672, antialias=True),
+    ])
+    dataset = OzonDataset(DEFAULT_DATA_PATH, DEFAULT_IMAGES_PATH, image_transform)
     encoder = get_or_download_model(device=device)
     model = Model(encoder, hidden_dim=1, n_hidden_layers=1).to(device)
 
