@@ -4,6 +4,7 @@ import pandas as pd
 
 import torch
 from torchvision import io
+from torchvision.transforms import v2
 from torch.utils.data import Dataset
 
 
@@ -12,11 +13,13 @@ class OzonDataset(Dataset):
         self,
         path_to_data: str = "./train_dataset/data.csv",
         path_to_images: str = "./train_dataset/images/",
+        image_transform = None,
     ):
         super().__init__()
 
         self.df = pd.read_csv(path_to_data)
         self.images_dir = Path(path_to_images)
+        self.image_transform = image_transform
 
     def __len__(self):
         return len(self.df)
@@ -33,6 +36,10 @@ class OzonDataset(Dataset):
             for path in sorted(image_dir.iterdir()):
                 if path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
                     image = io.read_image(path, mode=io.ImageReadMode.RGB)
+
+                    if self.image_transform is not None:
+                        image = self.image_transform(image)
+
                     images.append(image)
 
         return {

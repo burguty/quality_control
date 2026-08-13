@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 import torch
 from torch import nn
+from torchvision.transforms import v2
 from torch.utils.data import DataLoader, random_split
 
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -22,7 +23,11 @@ def load_dataset(
     valid_size: float = 0.2,
     seed: int = 42,
 ):
-    dataset = OzonDataset(path_to_data=DEFAULT_DATA_PATH, path_to_images=DEFAULT_IMAGES_PATH)
+    image_transform = v2.Compose([
+        v2.Resize(size=672, antialias=True),
+    ])
+
+    dataset = OzonDataset(DEFAULT_DATA_PATH, DEFAULT_IMAGES_PATH, image_transform)
 
     valid_size = int(len(dataset) * valid_size)
     train_size = len(dataset) - valid_size
@@ -126,37 +131,52 @@ def train_model(
         )
 
 
+# def main():
+#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#     print(f"Device: {device}")
+
+#     # DATA
+#     dataset = OzonDataset(DEFAULT_DATA_PATH, DEFAULT_IMAGES_PATH, image_transform)
+
+#     loader = DataLoader(
+#         dataset,
+#         batch_size=1,
+#         shuffle=False,
+#         collate_fn=OzonDataset.collate_fn,
+#     )
+
+#     # MODEL
+#     encoder = get_or_download_model(device=device)
+#     model = Model(encoder, hidden_dim=512, n_hidden_layers=2).to(device)
+
+#     # ONE BATCH SANITY CHECK
+#     batch = next(iter(loader))
+
+#     logits = model(batch)
+
+#     print("Batch size:", len(batch["id"]))
+#     print("Logits shape:", logits.shape)
+#     print("Labels shape:", batch["label"].shape)
+
+#     print("Logits:", logits)
+#     print("Probabilities:", torch.sigmoid(logits))
+#     print("Predictions:", (torch.sigmoid(logits) >= 0.5).long())
+#     print("Labels:", batch["label"])
+
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
     # DATA
-    dataset = OzonDataset(path_to_data=DEFAULT_DATA_PATH, path_to_images=DEFAULT_IMAGES_PATH)
+    train_loader, valid_loader = load_dataset(batch_size=1)
 
-    loader = DataLoader(
-        dataset,
-        batch_size=1,
-        shuffle=False,
-        collate_fn=OzonDataset.collate_fn,
-    )
-
-    # MODEL
+    # MODEL INITIALIZATION
     encoder = get_or_download_model(device=device)
-    model = Model(encoder, hidden_dim=512, n_hidden_layers=2).to(device)
+    model = Model(encoder, hidden_dim=512, n_hidden_layers=2)
+    model = model.to(device)
 
-    # ONE BATCH SANITY CHECK
-    batch = next(iter(loader))
-
-    logits = model(batch)
-
-    print("Batch size:", len(batch["id"]))
-    print("Logits shape:", logits.shape)
-    print("Labels shape:", batch["label"].shape)
-
-    print("Logits:", logits)
-    print("Probabilities:", torch.sigmoid(logits))
-    print("Predictions:", (torch.sigmoid(logits) >= 0.5).long())
-    print("Labels:", batch["label"])
+    # TRAINING
+    train_model(model, train_loader, valid_loader, device, num_epochs=10)
 
 
 if __name__ == "__main__":
