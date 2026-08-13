@@ -33,56 +33,7 @@ def load_dataset(
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=OzonDataset.collate_fn)
     valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, collate_fn=OzonDataset.collate_fn)
 
-    return dataset, train_loader, valid_loader
-
-
-@torch.inference_mode()
-def precompute_embeddings(
-    model: Model,
-    dataset: OzonDataset,
-    output_path: str | Path,
-):
-    text_embeds = []
-    image_embeds = []
-    categories = []
-    labels = []
-
-    model.eval()
-
-    loader = DataLoader(
-        dataset,
-        batch_size=4,
-        shuffle=False,
-        collate_fn=OzonDataset.collate_fn,
-    )
-
-    for batch in tqdm(loader, desc="Precomputing embeddings"):
-        text_embed = model.get_text_embeds(batch)
-        image_embed = model.get_image_embeds(batch)
-
-        text_embeds.append(text_embed.cpu())
-        image_embeds.append(image_embed.cpu())
-
-        categories.extend(batch["category"])
-        labels.append(batch["label"].cpu())
-
-    data = {
-        "text_embed": torch.cat(text_embeds, dim=0),
-        "image_embed": torch.cat(image_embeds, dim=0),
-        "category": categories,
-        "label": torch.cat(labels, dim=0),
-    }
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    torch.save(data, output_path)
-
-    print(f"Saved embeddings to: {output_path}")
-    print(f"text_embed:  {data['text_embed'].shape}")
-    print(f"image_embed: {data['image_embed'].shape}")
-    print(f"label:       {data['label'].shape}")
-    print(f"category:    {len(data['category'])}")
+    return train_loader, valid_loader
 
 
 @torch.inference_mode()
@@ -180,15 +131,32 @@ def main():
     print(f"Device: {device}")
 
     # DATA
-    dataset, train_loader, valid_loader = load_dataset(batch_size=4)
+    dataset = OzonDataset(path_to_data=DEFAULT_DATA_PATH, path_to_images=DEFAULT_IMAGES_PATH)
 
-    # MODEL INITIALIZATION
+    loader = DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        collate_fn=OzonDataset.collate_fn,
+    )
+
+    # MODEL
     encoder = get_or_download_model(device=device)
-    model = Model(encoder, hidden_dim=512, n_hidden_layers=2)
-    model = model.to(device)
+    model = Model(encoder, hidden_dim=512, n_hidden_layers=2).to(device)
 
-    # # TRAINING
-    # train_model(model, train_loader, valid_loader, device, num_epochs=10)
+    # ONE BATCH SANITY CHECK
+    batch = next(iter(loader))
+
+    logits = model(batch)
+
+    print("Batch size:", len(batch["id"]))
+    print("Logits shape:", logits.shape)
+    print("Labels shape:", batch["label"].shape)
+
+    print("Logits:", logits)
+    print("Probabilities:", torch.sigmoid(logits))
+    print("Predictions:", (torch.sigmoid(logits) >= 0.5).long())
+    print("Labels:", batch["label"])
 
 
 if __name__ == "__main__":
