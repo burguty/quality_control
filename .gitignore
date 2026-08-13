@@ -220,3 +220,4 @@ __marimo__/
 models/Qwen
 .vscode
 train_dataset
+move_rep_on_gpu_vm.sh
